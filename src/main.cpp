@@ -8,7 +8,20 @@
 #define ACCEL_XOUT_H 0x3B //XOUT to ZOUT is 6 bytes from 0x3B to 0x40
 
 byte I2C_Scan();
-void get_accel_data(uint16_t (&xout)[3]);
+
+class Accelerometer{
+
+  public:
+    Accelerometer();
+    void wakeUp();
+    void update_accel_data();
+    int16_t ax;
+    int16_t ay;
+    int16_t az;
+
+};
+
+Accelerometer accel;
 
 void setup() {
   Wire.begin(I2C_SDA, I2C_SCL);
@@ -22,38 +35,21 @@ void setup() {
     Serial.println(scanned_addr, HEX);
   }
 
-  Wire.beginTransmission(I2C_ADDR);
-  Wire.write(0x6B);
-  Wire.write(0x0);
-  Wire.endTransmission();
+  accel.wakeUp();
 
 }
 
+
 void loop() {
-  // //write raw data example:
-  // Wire.beginTransmission(I2C_ADDR);
-  // Wire.write(0x01); //register
-  // Wire.write(0xAB);
-  // Wire.endTransmission();
 
-  // //read raw data example:
-  // Wire.beginTransmission(I2C_ADDR);
-  // Wire.write(0x01); //register
-  // Wire.endTransmission(false); //send a restart
+  accel.update_accel_data();
 
-  // Wire.requestFrom(I2C_ADDR, 1); //request 1 byte
+  float pitch = atan2(accel.ax, sqrt(accel.ay * accel.ay + accel.az * accel.az)) * 180.0 / PI;
+  float roll = atan2(accel.ay, sqrt(accel.ax * accel.ax + accel.az * accel.az)) * 180.0 / PI;
 
-  // if(Wire.available()){
-  //   uint8_t recieved = Wire.read();
-  //   Serial.println(recieved, HEX);
-  // }
-  uint16_t xout_data[3] = {0x00, 0x00, 0x00};
-
-  get_accel_data(xout_data);
-
-  for(int i = 0; i < 3; i++){
-    Serial.print(xout_data[i]);
-  }
+  Serial.print(pitch);
+  Serial.print(" ");
+  Serial.print(roll);
 
   Serial.println();
 
@@ -81,16 +77,28 @@ byte I2C_Scan(){
   }
 }
 
-void get_accel_data(uint16_t (&accel)[3]){
+Accelerometer::Accelerometer() : ax(0), ay(0), az(0){
 
+}
+
+void Accelerometer::wakeUp(){
+  Wire.beginTransmission(I2C_ADDR);
+  Wire.write(0x6B);
+  Wire.write(0x0);
+  Wire.endTransmission();
+}
+
+void Accelerometer::update_accel_data(){
   Wire.beginTransmission(I2C_ADDR);
   Wire.write(ACCEL_XOUT_H);
   Wire.endTransmission(false);
 
   Wire.requestFrom(I2C_ADDR, 6);
-  if(Wire.available()){
-    accel[0] = Wire.read() << 8 | Wire.read();
-    accel[1] = Wire.read() << 8 | Wire.read();
-    accel[2] = Wire.read() << 8 | Wire.read();
+
+  if(Wire.available() == 6){
+    ax = Wire.read() << 8 | Wire.read();
+    ay = Wire.read() << 8 | Wire.read();
+    az = Wire.read() << 8 | Wire.read();
   }
+
 }
