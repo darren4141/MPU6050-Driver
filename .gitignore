@@ -1,0 +1,12 @@
+# PlatformIO
+.pio/
+.vscode/
+.idea/
+*.pyc
+__pycache__/
+
+# SPIFFS cache
+data/.DS_Store
+
+.DS_Store
+Thumbs.db
